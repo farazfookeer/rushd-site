@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rushd Labs — Building the tools agents actually need</title>
+    <meta name="description" content="Rushd Labs builds open-source infrastructure for AI agents. Extraction pipelines, workflow engines, and developer tools.">
+    <meta property="og:title" content="Rushd Labs — Building the tools agents actually need">
+    <meta property="og:description" content="Open-source AI agent infrastructure from Rushd.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://withrushd.com/labs">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400;500;700&family=Reem+Kufi:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #080d1a;
+            --navy-mid: #0e1528;
+            --navy-light: #141d35;
+            --gold: #c8a24e;
+            --gold-dim: #c8a24e80;
+            --gold-glow: #c8a24e15;
+            --text: #e8e4dc;
+            --text-dim: #8a8b8f;
+            --text-faint: #4a4f5e;
+            --white: #f5f2eb;
+            --green: #34d399;
+            --amber: #f59e0b;
+            --purple: #a78bfa;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        ::selection { background: var(--gold); color: var(--navy); }
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--navy);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(20,29,53,0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(20,29,53,0.15) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold-glow), transparent);
+            animation: scanLine 8s linear infinite;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 20px var(--gold-glow); }
+            50% { box-shadow: 0 0 40px rgba(200,162,78,0.15); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 32px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── NAV ─────────────────────────────────── */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 50;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        nav.scrolled {
+            background: rgba(8,13,26,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(20,29,53,0.6);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-brand-name {
+            font-family: 'DM Serif Display', serif;
+            font-size: 22px;
+            color: var(--gold);
+            letter-spacing: 2px;
+            text-decoration: none;
+        }
+
+        .nav-brand-labs {
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--navy);
+            background: var(--gold);
+            padding: 2px 8px;
+            border-radius: 2px;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            padding: 6px 14px;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+            background: var(--gold-glow);
+            border-color: var(--gold-dim);
+        }
+
+        /* ── GLOW LINE ───────────────────────────── */
+        .glow-line {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            box-shadow: 0 0 12px var(--gold-dim);
+        }
+
+        /* ── SECTION LABEL ───────────────────────── */
+        .section-label {
+            font-size: 11px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 12px;
+        }
+
+        section {
+            padding: 80px 0;
+            position: relative;
+        }
+
+        section.alt-bg {
+            background: rgba(10,16,32,0.5);
+        }
+
+        h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 36px;
+            color: var(--white);
+            line-height: 1.3;
+            margin-bottom: 32px;
+        }
+
+        h2 .gold { color: var(--gold); }
+
+        /* ── HERO ────────────────────────────────── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            padding: 0 32px;
+        }
+
+        .hero-glow {
+            position: absolute;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation: glowPulse 4s ease infinite;
+        }
+
+        .hero-content { position: relative; }
+
+        .hero-super {
+            font-size: 10px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+            animation: fadeUp 0.8s ease both;
+        }
+
+        .hero-super a {
+            color: var(--gold);
+            text-decoration: none;
+            border-bottom: 1px solid var(--gold-dim);
+        }
+
+        .hero-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(48px, 8vw, 96px);
+            color: var(--white);
+            letter-spacing: 3px;
+            line-height: 0.95;
+            margin-bottom: 8px;
+            animation: fadeUp 0.8s ease 150ms both;
+        }
+
+        .hero-title-labs {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(14px, 2vw, 20px);
+            letter-spacing: 10px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 40px;
+            animation: fadeUp 0.8s ease 300ms both;
+        }
+
+        .hero-desc {
+            font-size: 13px;
+            color: var(--text-dim);
+            max-width: 560px;
+            margin: 0 auto 48px;
+            line-height: 1.9;
+            animation: fadeUp 0.8s ease 450ms both;
+        }
+
+        .hero-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-dim);
+            animation: fadeUp 0.8s ease 600ms both;
+        }
+
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        /* ── THESIS ──────────────────────────────── */
+        .thesis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        .thesis-text {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.9;
+        }
+
+        .thesis-text p { margin-bottom: 16px; }
+
+        .thesis-highlight {
+            color: var(--text);
+        }
+
+        .thesis-gold {
+            color: var(--gold);
+        }
+
+        /* ── PROJECT CARDS ───────────────────────── */
+        .project-showcase {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        .project-large {
+            background: var(--navy-mid);
+            border: 1px solid var(--navy-light);
+            border-radius: 2px;
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            transition: all 0.3s;
+        }
+
+        .project-large:hover {
+            border-color: var(--gold-dim);
+        }
+
+        .project-large-tag {
+            font-size: 9px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .project-large-name {
+            font-family: 'DM Serif Display', serif;
+            font-size: 32px;
+            color: var(--white);
+            margin-bottom: 8px;
+        }
+
+        .project-large-tagline {
+            font-size: 12px;
+            color: var(--gold);
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .project-large-desc {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.8;
+        }
+
+        .project-large-desc p { margin-bottom: 12px; }
+
+        .project-large-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 20px;
+        }
+
+        .tech-badge {
+            font-size: 9px;
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            border: 1px solid var(--navy-light);
+            border-radius: 2px;
+            color: var(--text-dim);
+        }
+
+        .project-large-features {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .feature-item {
+            border-left: 2px solid var(--navy-light);
+            padding-left: 16px;
+            transition: all 0.3s;
+        }
+
+        .feature-item:hover {
+            border-color: var(--gold-dim);
+        }
+
+        .feature-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.7;
+        }
+
+        /* Smaller project cards */
+        .projects-small-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .project-small {
+            background: var(--navy-mid);
+            border: 1px solid var(--navy-light);
+            border-radius: 2px;
+            padding: 24px;
+            transition: all 0.3s;
+        }
+
+        .project-small:hover {
+            border-color: var(--gold-dim);
+            transform: translateY(-2px);
+        }
+
+        .project-small-tag {
+            font-size: 9px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .project-small-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .project-small-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.7;
+        }
+
+        .tag-active { color: var(--green); }
+        .tag-spec { color: var(--amber); }
+        .tag-demo { color: var(--purple); }
+        .tag-concept { color: var(--text-dim); }
+
+        /* ── PRINCIPLES ──────────────────────────── */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .principle {
+            border-top: 2px solid var(--navy-light);
+            padding-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .principle:hover {
+            border-color: var(--gold-dim);
+        }
+
+        .principle-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+
+        .principle-text {
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.8;
+        }
+
+        /* ── CTA ─────────────────────────────────── */
+        .cta-section {
+            text-align: center;
+            padding: 80px 32px;
+        }
+
+        .cta-links {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 32px;
+        }
+
+        .cta-link {
+            font-size: 12px;
+            color: var(--gold);
+            text-decoration: none;
+            padding: 10px 24px;
+            border: 1px solid var(--gold-dim);
+            border-radius: 2px;
+            transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+
+        .cta-link:hover {
+            background: var(--gold);
+            color: var(--navy);
+        }
+
+        .cta-link.secondary {
+            color: var(--text-dim);
+            border-color: var(--navy-light);
+        }
+
+        .cta-link.secondary:hover {
+            color: var(--text);
+            border-color: var(--text-dim);
+            background: transparent;
+        }
+
+        /* ── FOOTER ──────────────────────────────── */
+        footer {
+            text-align: center;
+            padding: 40px 32px;
+            font-size: 10px;
+            color: var(--text-faint);
+            letter-spacing: 1px;
+        }
+
+        footer a {
+            color: var(--gold-dim);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: var(--gold);
+        }
+
+        @media (max-width: 768px) {
+            .thesis-grid { grid-template-columns: 1fr; }
+            .project-large { grid-template-columns: 1fr; }
+            .projects-small-grid { grid-template-columns: 1fr; }
+            .principles-grid { grid-template-columns: 1fr; }
+            .cta-links { flex-direction: column; align-items: center; }
+            .nav-links { display: none; }
+            h2 { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+    <div class="nav-brand">
+        <a href="index.html" class="nav-brand-name">RUSHD</a>
+        <span class="nav-brand-labs">LABS</span>
+    </div>
+    <div class="nav-links">
+        <a href="index.html">Consultancy</a>
+        <a href="#thesis">Thesis</a>
+        <a href="#projects">Projects</a>
+        <a href="#principles">Principles</a>
+        <a href="https://github.com/farazfookeer" target="_blank">GitHub</a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+        <div class="hero-super">A product arm of <a href="index.html">Rushd</a></div>
+        <h1 class="hero-title">RUSHD</h1>
+        <div class="hero-title-labs">LABS</div>
+        <p class="hero-desc">
+            Open-source tools and infrastructure for AI agents.
+            Built by a practitioner, not a lab. Designed for the teams
+            that actually deploy agents in production and need them
+            to work reliably overnight without babysitting.
+        </p>
+        <div style="font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--gold); letter-spacing: 1px; margin-bottom: 20px; animation: fadeUp 0.8s ease 600ms both;">Faraz Fookeer</div>
+        <div class="hero-status">
+            <span class="status-dot"></span>
+            Actively building
+        </div>
+    </div>
+</section>
+
+<div class="glow-line"></div>
+
+<!-- THESIS -->
+<section id="thesis">
+    <div class="container">
+        <div class="section-label">01 / Thesis</div>
+        <h2>Agents need infrastructure<br><span class="gold">that doesn't exist yet</span></h2>
+        <div class="thesis-grid">
+            <div class="thesis-text">
+                <p>
+                    The current AI agent stack is held together with duct tape. Agents talk to the
+                    web through browsers built for humans. They receive raw HTML when they need
+                    structured data. They execute multi-page tasks as sequential scripts when they
+                    need declarative workflows. They run in isolation when they should share resources.
+                </p>
+                <p>
+                    <span class="thesis-highlight">Rushd Labs builds the missing layer</span> between
+                    AI agents and the systems they interact with. Not the models. Not the frameworks.
+                    The practical infrastructure that turns "it works in a demo" into "it runs
+                    unattended overnight."
+                </p>
+            </div>
+            <div class="thesis-text">
+                <p>
+                    Every project starts from the same question:
+                    <span class="thesis-gold">what does an agent actually need here, and what is it
+                    currently forced to do instead?</span>
+                </p>
+                <p>
+                    The gap between those two answers is where the product lives. Wraith exists
+                    because agents need structured data from web pages but get raw HTML. BabyGPT
+                    exists because people are told LLMs are magic when every layer can be written
+                    in plain NumPy and understood from first principles.
+                </p>
+                <p>
+                    Everything ships open source. Paid tiers cover hosting and custom configurations,
+                    not the core tools.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="glow-line"></div>
+
+<!-- PROJECTS -->
+<section id="projects" class="alt-bg">
+    <div class="container">
+        <div class="section-label">02 / Projects</div>
+        <h2>What we're building</h2>
+
+        <div class="project-showcase">
+
+            <!-- WRAITH (flagship) -->
+            <div class="project-large">
+                <div>
+                    <div class="project-large-tag tag-active">Active development</div>
+                    <div class="project-large-name">Wraith</div>
+                    <div class="project-large-tagline">Structured web extraction for AI agents</div>
+                    <div class="project-large-desc">
+                        <p>
+                            An orchestration layer that sits on top of headless browsers and turns
+                            dumb page loads into smart, targeted extractions. Agents get clean JSON
+                            instead of raw HTML. Multi-page workflows run as config files, not scripts.
+                        </p>
+                        <p>
+                            Define what you need in TOML. Wraith blocks the junk, extracts the signal,
+                            and returns structured data your agent can reason over immediately.
+                        </p>
+                    </div>
+                    <div class="project-large-tech">
+                        <span class="tech-badge">Python</span>
+                        <span class="tech-badge">Playwright</span>
+                        <span class="tech-badge">FastAPI</span>
+                        <span class="tech-badge">MCP Server</span>
+                        <span class="tech-badge">TOML Configs</span>
+                        <span class="tech-badge">Pydantic</span>
+                    </div>
+                </div>
+                <div class="project-large-features">
+                    <div class="feature-item">
+                        <div class="feature-title">Config-based extraction</div>
+                        <div class="feature-desc">TOML files map CSS selectors to output fields. Adding a new site means editing config, not writing code.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Workflow DAGs</div>
+                        <div class="feature-desc">Multi-page research loops, price monitors, and auth flows as declarative TOML. Parallel branches, dependency resolution, data passing between steps.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Request filtering</div>
+                        <div class="feature-desc">Blocks images, trackers, ads, and fonts at the network level. Pages load faster because the browser never downloads the junk.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">MCP server</div>
+                        <div class="feature-desc">FastAPI server exposing extract, navigate, batch, links, and workflow tools. Agents connect through the same MCP interface they use for everything else.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Swappable engine</div>
+                        <div class="feature-desc">Playwright/Chromium today. Lightpanda or any future engine tomorrow. One interface, any browser underneath.</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+            <!-- BABYGPT (shipped) -->
+            <div class="project-large">
+                <div>
+                    <div class="project-large-tag tag-active">Shipped</div>
+                    <div class="project-large-name">BabyGPT</div>
+                    <div class="project-large-tagline">Learn how LLMs actually work</div>
+                    <div class="project-large-desc">
+                        <p>
+                            A complete GPT implementation built from scratch using only NumPy.
+                            No PyTorch, no TensorFlow. Every layer of the transformer is written
+                            in plain Python so you can see the maths, trace the gradients, and
+                            understand what's actually happening inside a language model.
+                        </p>
+                        <p>
+                            Includes a React + FastAPI web UI for training, attention visualisation,
+                            LoRA fine-tuning, and model export. Models from 420K to 124M parameters,
+                            all trainable on a laptop CPU.
+                        </p>
+                    </div>
+                    <div class="project-large-tech">
+                        <span class="tech-badge">Python</span>
+                        <span class="tech-badge">NumPy</span>
+                        <span class="tech-badge">React</span>
+                        <span class="tech-badge">TypeScript</span>
+                        <span class="tech-badge">FastAPI</span>
+                        <span class="tech-badge">Vite</span>
+                    </div>
+                    <div style="margin-top: 16px; display: flex; gap: 12px;">
+                        <a href="https://huggingface.co/spaces/KvotheFF/babygpt" target="_blank" style="font-size: 11px; color: var(--gold); text-decoration: none; padding: 6px 14px; border: 1px solid var(--gold-dim); border-radius: 2px; transition: all 0.2s; letter-spacing: 0.5px;">Hugging Face</a>
+                        <a href="https://github.com/farazfookeer/babygpt" target="_blank" style="font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 6px 14px; border: 1px solid var(--navy-light); border-radius: 2px; transition: all 0.2s; letter-spacing: 0.5px;">GitHub</a>
+                    </div>
+                </div>
+                <div class="project-large-features">
+                    <div class="feature-item">
+                        <div class="feature-title">Pure NumPy transformer</div>
+                        <div class="feature-desc">Embedding, multi-head attention, feed-forward, layer norm, softmax, backpropagation. All implemented from first principles with no ML framework dependencies.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">LoRA fine-tuning</div>
+                        <div class="feature-desc">Low-rank adaptation that freezes the base model and trains tiny adapters at ~1% of parameters. Fast enough to run on mobile. Multiple style presets included.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Attention visualisation</div>
+                        <div class="feature-desc">Interactive heatmaps showing which tokens attend to which. Layer-by-layer exploration of how the model builds understanding of text.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Interactive web UI</div>
+                        <div class="feature-desc">Five-page app: Learn (step-by-step explanations), Train (real-time loss curves), Visualise (attention maps), LoRA (fine-tuning), Download (model export).</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LDI CRISIS SIMULATOR (shipped) -->
+            <div class="project-large">
+                <div>
+                    <div class="project-large-tag tag-active">Shipped</div>
+                    <div class="project-large-name">LDI Crisis Simulator</div>
+                    <div class="project-large-tagline">Autonomous agents stress-testing pension solvency</div>
+                    <div class="project-large-desc">
+                        <p>
+                            An AI-driven financial risk engine that simulates the UK pension LDI
+                            crisis using autonomous agents. Unlike static backtesting, the system
+                            uses generative AI to invent market scenarios, detect insolvency risks
+                            in real-time, and execute strategic trades to preserve solvency.
+                        </p>
+                        <p>
+                            A 30-day simulation loop runs autonomously: a Market Agent moves the
+                            gilt yield curve, a Valuation Engine recalculates present values, an
+                            Ops Agent issues margin calls, and a Portfolio Manager Agent decides
+                            whether to sell, repo, or hold.
+                        </p>
+                    </div>
+                    <div class="project-large-tech">
+                        <span class="tech-badge">n8n</span>
+                        <span class="tech-badge">PostgreSQL</span>
+                        <span class="tech-badge">GPT-4o</span>
+                        <span class="tech-badge">Supabase</span>
+                        <span class="tech-badge">QuickChart</span>
+                    </div>
+                </div>
+                <div class="project-large-features">
+                    <div class="feature-item">
+                        <div class="feature-title">Agent "Mike" (Ops &amp; Risk)</div>
+                        <div class="feature-desc">Monitors funding levels against liabilities. When funding drops below 100%, issues formal SQL-backed margin calls with contextual analysis of the shortfall.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Agent "Sarah" (Portfolio Manager)</div>
+                        <div class="feature-desc">Reads margin calls, checks collateral inventory, and autonomously decides: REPO to maintain duration hedge, SELL to survive a cash crunch, or REVERSE_REPO to capture yield.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Dynamic market generation</div>
+                        <div class="feature-desc">AI generates daily economic news and moves the 10-year gilt yield curve. No hardcoded scenarios. Every simulation run produces unique market conditions.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Live dashboard</div>
+                        <div class="feature-desc">Real-time visualisation of gilt yields vs average fund solvency, trade rationale logs, and insolvency events avoided across the simulation run.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RUG-PULL DETECTOR (shipped) -->
+            <div class="project-large">
+                <div>
+                    <div class="project-large-tag tag-active">Shipped</div>
+                    <div class="project-large-name">Rug-Pull Detector</div>
+                    <div class="project-large-tagline">Autonomous smart contract auditor</div>
+                    <div class="project-large-desc">
+                        <p>
+                            Analyses GitHub repositories for rug-pull patterns in Solidity contracts.
+                            Submit a repo URL and the system clones it, runs static analysis via
+                            Slither, applies custom detection rules across three categories, and
+                            returns a risk score from 0 to 100.
+                        </p>
+                        <p>
+                            Built as a full-stack application with async job processing. Analyses
+                            run in background workers while the dashboard updates in real time.
+                            Dockerised for one-command deployment.
+                        </p>
+                    </div>
+                    <div class="project-large-tech">
+                        <span class="tech-badge">Python</span>
+                        <span class="tech-badge">FastAPI</span>
+                        <span class="tech-badge">React</span>
+                        <span class="tech-badge">TypeScript</span>
+                        <span class="tech-badge">Slither</span>
+                        <span class="tech-badge">Celery</span>
+                        <span class="tech-badge">PostgreSQL</span>
+                        <span class="tech-badge">Docker</span>
+                    </div>
+                </div>
+                <div class="project-large-features">
+                    <div class="feature-item">
+                        <div class="feature-title">Owner privilege detection (35%)</div>
+                        <div class="feature-desc">Hidden mint functions, pause mechanisms, blacklist functionality, ownership transfer patterns, and selfdestruct capabilities.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Liquidity trap detection (40%)</div>
+                        <div class="feature-desc">Anti-sell mechanisms, max transaction limits, honeypot patterns, and cooldown abuse. The highest-weighted category because these directly trap user funds.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Fee manipulation detection (25%)</div>
+                        <div class="feature-desc">Hidden transfer fees, dynamic fee adjustments, and fee extraction to owner addresses. Catches the subtle drain patterns that evade manual review.</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-title">Severity-weighted risk scoring</div>
+                        <div class="feature-desc">0-100 scale from SAFE to CRITICAL. Each finding is weighted by category and severity. Scores above 60 flag significant red flags, above 80 indicates high probability of rug-pull.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Research projects -->
+        <div class="projects-small-grid">
+            <div class="project-small">
+                <div class="project-small-tag tag-spec">Specification complete</div>
+                <div class="project-small-name">Alcove</div>
+                <div class="project-small-desc">Desktop GUI installer wrapping OpenClaw for non-technical users. Tauri 2.0, React, TypeScript. Six-step onboarding wizard, freemium model. "OpenClaw without the stress."</div>
+            </div>
+            <div class="project-small">
+                <div class="project-small-tag tag-demo">Demo</div>
+                <div class="project-small-name">MidCap Alpha</div>
+                <div class="project-small-desc">Dual-mode React app: multi-agent Intel Mode with Research Analyst, Execution Strategist, and CIO synthesiser. Academy Mode with 30-concept equities curriculum.</div>
+            </div>
+            <div class="project-small">
+                <div class="project-small-tag tag-concept">Discovery</div>
+                <div class="project-small-name">RepoAgent</div>
+                <div class="project-small-desc">Autonomous repo portfolio manager. £500M book, 12 tools, CTD logic, 8 simulated counterparties. Bloomberg-style cyberpunk terminal UI.</div>
+            </div>
+            <div class="project-small">
+                <div class="project-small-tag tag-concept">Discovery</div>
+                <div class="project-small-name">Hedge Fund Simulator</div>
+                <div class="project-small-desc">Multi-strategy fund with 4 PM agents + CIO meta-agent. $500M AUM, investment committee cycle, Bridgewater-style risk reporting.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="glow-line"></div>
+
+<!-- PRINCIPLES -->
+<section id="principles">
+    <div class="container">
+        <div class="section-label">03 / Principles</div>
+        <h2>How we build</h2>
+        <div class="principles-grid">
+            <div class="principle">
+                <div class="principle-title">Open source core</div>
+                <div class="principle-text">The tools are free. Paid tiers cover hosting, managed infrastructure, and custom configuration. The core engine is always open.</div>
+            </div>
+            <div class="principle">
+                <div class="principle-title">Config over code</div>
+                <div class="principle-text">Adding support for a new site or workflow should mean writing a config file, not a Python script. Operators shouldn't need to be engineers.</div>
+            </div>
+            <div class="principle">
+                <div class="principle-title">Agent-first output</div>
+                <div class="principle-text">Every API response is structured for LLM consumption. No raw HTML dumps. No DOM traversal. Typed JSON that an agent can reason over immediately.</div>
+            </div>
+            <div class="principle">
+                <div class="principle-title">Practitioner-built</div>
+                <div class="principle-text">Built by someone who deploys agents in financial services, not by a research lab. Every design decision comes from real production friction.</div>
+            </div>
+            <div class="principle">
+                <div class="principle-title">Honest about limits</div>
+                <div class="principle-text">Every project page states what works, what doesn't, and what's coming. No vapourware. If it's a spec, it says so. If it's shipping, it has a repo.</div>
+            </div>
+            <div class="principle">
+                <div class="principle-title">Ethics baked in</div>
+                <div class="principle-text">Informed by an MA in AI Ethics &amp; Society. Stealth features exist to make agents work, not to deceive users. Extraction respects robots.txt and rate limits.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="glow-line"></div>
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="section-label">04 / Get involved</div>
+    <h2>Built with Rushd</h2>
+    <p style="font-size: 12px; color: var(--text-dim); max-width: 480px; margin: 0 auto; line-height: 1.8;">
+        All Labs projects are open source and welcome contributions.
+        If you're building agent infrastructure or want to collaborate,
+        get in touch.
+    </p>
+    <div class="cta-links">
+        <a href="https://github.com/farazfookeer" class="cta-link" target="_blank">GitHub</a>
+        <a href="/cdn-cgi/l/email-protection#deb8bfacbfa49ea9b7aab6acabadb6baf0bdb1b3" class="cta-link"><span class="__cf_email__" data-cfemail="2b4d4a594a516b5c425f43595e58434f05484446">[email&#160;protected]</span></a>
+        <a href="index.html" class="cta-link secondary">Rushd Consultancy</a>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <span>&copy; 2026 Rushd Labs</span>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href="index.html">Rushd Consultancy</a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <span>withrushd.com</span>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 50);
+    }, { passive: true });
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = 'fadeUp 0.6s ease forwards';
+                observer.unobserve(entry.target);
+            }
+  
